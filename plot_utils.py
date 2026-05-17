@@ -209,7 +209,7 @@ def plot_two_issue_CEP(scenarios, t_final=300, linewidth=2, filename=None,
         axL.plot(t, data['C_2_L'], color=color, linestyle=linestyle, linewidth=lw,
                  alpha=0.85, label='_nolegend_')
 
-        # P(t): mean of group priorities (returned as 'P' by run_two_issue_system)
+        # P(t): population priority of H
         axP.plot(t, data['P'], color=color, linestyle=linestyle, linewidth=lw,
                  alpha=0.9, label=label)
 

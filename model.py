@@ -133,7 +133,8 @@ def run_two_issue_system(initial_conditions, s_H, s_L, sigma, alpha, rho, I_H_fu
 
     Returns:
     --------
-    dict with keys: 't', 'C_1_H', 'C_2_H', 'C_1_L', 'C_2_L', 'P_1', 'P_2', 'P'
+    dict with keys: 't', 'C_1_H', 'C_2_H', 'C_1_L', 'C_2_L', 'C_H', 'C_L', 'P'
+    where P is the population priority computed from population-mean concerns.
     """
     C_1_H_0, C_2_H_0, C_1_L_0, C_2_L_0 = initial_conditions
     t_eval = np.linspace(0, t_final, n_points)
@@ -187,16 +188,16 @@ def run_two_issue_system(initial_conditions, s_H, s_L, sigma, alpha, rho, I_H_fu
     C_1_L_arr = np.array(C_1_L_list)
     C_2_L_arr = np.array(C_2_L_list)
 
-    # Per-group priorities, then average across groups
-    P_1 = compute_priority(C_1_H_arr, C_1_L_arr, sigma)
-    P_2 = compute_priority(C_2_H_arr, C_2_L_arr, sigma)
-    P = (P_1 + P_2) / 2  # Mean of group priorities (P_bar)
+    # Population priority from population-mean concerns
+    C_H = 0.5 * (C_1_H_arr + C_2_H_arr)
+    C_L = 0.5 * (C_1_L_arr + C_2_L_arr)
+    P = compute_priority(C_H, C_L, sigma)
 
     return {
         't': t_eval,
         'C_1_H': C_1_H_arr, 'C_2_H': C_2_H_arr,
         'C_1_L': C_1_L_arr, 'C_2_L': C_2_L_arr,
-        'P_1': P_1, 'P_2': P_2, 'P': P
+        'C_H': C_H, 'C_L': C_L, 'P': P,
     }
 
 
@@ -236,10 +237,7 @@ def run_two_issue_system_ivp(initial_conditions, s_H, s_L, sigma, alpha, rho,
 
     C_H = 0.5 * (C_1_H + C_2_H)
     C_L = 0.5 * (C_1_L + C_2_L)
-    P_1 = np.exp(C_1_H / sigma) / (np.exp(C_1_H / sigma) + np.exp(C_1_L / sigma))
-    P_2 = np.exp(C_2_H / sigma) / (np.exp(C_2_H / sigma) + np.exp(C_2_L / sigma))
-    P_bar = 0.5 * (P_1 + P_2)
-    P = np.exp(C_H / sigma) / (np.exp(C_H / sigma) + np.exp(C_L / sigma))
+    P = compute_priority(C_H, C_L, sigma)
 
     I_H = np.array([I_H_func(ti) for ti in t])
     I_L = np.array([I_L_func(ti) for ti in t])
@@ -249,7 +247,7 @@ def run_two_issue_system_ivp(initial_conditions, s_H, s_L, sigma, alpha, rho,
         't': t,
         'C_1_H': C_1_H, 'C_2_H': C_2_H, 'C_H': C_H,
         'C_1_L': C_1_L, 'C_2_L': C_2_L, 'C_L': C_L,
-        'P_1': P_1, 'P_2': P_2, 'P_bar': P_bar, 'P': P,
+        'P': P,
         'I_H': I_H, 'I_L': I_L, 'rho_t': rho_t,
     }
 
@@ -294,15 +292,13 @@ def run_two_issue_system_dynamic_s_H(initial_conditions, s_H, s_L, sigma, alpha,
 
     C_H = 0.5 * (C_1_H + C_2_H)
     C_L = 0.5 * (C_1_L + C_2_L)
-    P_1 = np.exp(C_1_H / sigma) / (np.exp(C_1_H / sigma) + np.exp(C_1_L / sigma))
-    P_2 = np.exp(C_2_H / sigma) / (np.exp(C_2_H / sigma) + np.exp(C_2_L / sigma))
-    P = 0.5 * (P_1 + P_2)
+    P = compute_priority(C_H, C_L, sigma)
 
     return {
         't': t_eval,
         'C_1_H': C_1_H, 'C_2_H': C_2_H,
         'C_1_L': C_1_L, 'C_2_L': C_2_L,
-        'P_1': P_1, 'P_2': P_2, 'P': P
+        'C_H': C_H, 'C_L': C_L, 'P': P,
     }
 
 
