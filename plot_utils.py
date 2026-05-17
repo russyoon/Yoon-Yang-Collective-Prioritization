@@ -6,7 +6,17 @@ import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
 
-from model import run_two_issue_system
+from model import run_two_issue_system, make_schedule
+
+
+def run_scenario(scn, t_final, **kwargs):
+    """Integrate a scenario dict through run_two_issue_system."""
+    return run_two_issue_system(
+        scn['initial_conditions'],
+        scn['s_H'], scn['s_L'], scn['sigma'],
+        scn['alpha'], scn['rho'],
+        scn['I_H'], scn['I_L'], t_final, **kwargs,
+    )
 
 # Setup directories
 current_dir = os.path.dirname(os.path.abspath(__file__)) if '__file__' in dir() else os.getcwd()
@@ -184,12 +194,7 @@ def plot_two_issue_CEP(scenarios, t_final=300, linewidth=2, filename=None,
         linestyle = scn.get('linestyle', SCENARIO_LINESTYLES[i % len(SCENARIO_LINESTYLES)])
         lw = scn.get('linewidth', linewidth)
 
-        data = run_two_issue_system(
-            scn['initial_conditions'],
-            scn['s_H'], scn['s_L'], scn['sigma'],
-            scn['alpha'], scn['rho'],
-            scn['I_H'], scn['I_L'], t_final
-        )
+        data = run_scenario(scn, t_final)
         t = data['t']
         label = scn.get('label', f"scenario {i+1}")
 

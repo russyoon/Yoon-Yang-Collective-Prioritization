@@ -18,7 +18,7 @@ def compute_priority(C_H, C_L, sigma):
     return np.exp(C_H / sigma) / (np.exp(C_H / sigma) + np.exp(C_L / sigma))
 
 
-def _make_schedule(param):
+def make_schedule(param):
     """Coerce param into a callable f(t).
 
     Accepts a scalar, a callable, or a list of (t_break, value) tuples
@@ -78,11 +78,11 @@ def run_two_issue_system(initial_conditions, s_H, s_L, sigma, alpha, rho,
     C_1_H_0, C_2_H_0, C_1_L_0, C_2_L_0 = initial_conditions
     t_eval = np.linspace(0, t_final, n_points)
 
-    s_H_func = _make_schedule(s_H)
-    s_L_func = _make_schedule(s_L)
-    rho_func = _make_schedule(rho)
-    I_H_func = _make_schedule(I_H)
-    I_L_func = _make_schedule(I_L)
+    s_H_func = make_schedule(s_H)
+    s_L_func = make_schedule(s_L)
+    rho_func = make_schedule(rho)
+    I_H_func = make_schedule(I_H)
+    I_L_func = make_schedule(I_L)
 
     def make_rhs(s_func, I_func):
         def rhs(t, y):

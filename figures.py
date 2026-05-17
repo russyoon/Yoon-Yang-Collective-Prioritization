@@ -5,19 +5,17 @@
 import os
 import numpy as np
 import matplotlib.pyplot as plt
-from tqdm.auto import tqdm
+from matplotlib.ticker import MultipleLocator
 import networkx as nx
 
 from model import (
     f,
-    run_two_issue_system,
+    make_schedule,
     compute_priority_heatmap,
 )
 from plot_utils import (
     COLORS,
     LINESTYLES,
-    SCENARIO_COLORS,
-    SCENARIO_LINESTYLES,
     figures_dir,
     supp_figures_dir,
     add_panel_label,
@@ -25,6 +23,7 @@ from plot_utils import (
     draw_priority_heatmap,
     _style_time_panel,
     plot_two_issue_CEP,
+    run_scenario,
     run_N_baseline,
     _N_BASELINE,
     figureR3_scenarios,
@@ -207,7 +206,6 @@ def figureR1_two_issue_dynamics(save=True, wide=False):
         figureR1_two_issue_dynamics_wide.pdf. Plot content is identical
         between the two variants.
     """
-    from matplotlib.ticker import MultipleLocator
     data = run_N_baseline()
     t = data['t']
     t_final = _N_BASELINE['t_final']
@@ -276,9 +274,6 @@ def figureR2_perturbations_and_phases(save=True):
         A (s_H perturbation, rho=0)    |   C (phase heatmap, rho=0)
         B (rho perturbation, s_H=0.9)  |   D (phase heatmap, rho=0.2)
     """
-    from matplotlib.ticker import MultipleLocator
-
-    # --- Shared parameters & data ---
     b = _N_BASELINE
     t_final = b['t_final']
     linewidth = 2.5
@@ -293,11 +288,6 @@ def figureR2_perturbations_and_phases(save=True):
         borderpad=0.3, borderaxespad=0.3, columnspacing=0.6, frameon=True, fontsize=12,
     )
 
-    # Phase-diagram model parameters
-    C_1_H_0, C_2_H_0, C_1_L_0, C_2_L_0 = 0.55, 0.45, 0.45, 0.55
-    s_L = 0.4
-    sigma = 0.25
-    alpha_p = 3
     y_min = 0.5
 
     # --- Figure layout: 2 rows x 2 cols ---
@@ -336,15 +326,13 @@ def figureR2_perturbations_and_phases(save=True):
         ax.spines['right'].set_visible(False)
 
     # === Panels C & D: phase heatmaps (zoomed y-range, with marker dots) ===
-    ic = (C_1_H_0, C_2_H_0, C_1_L_0, C_2_L_0)
-
-    s_H_C, I_C, heat_C = compute_priority_heatmap(s_L, sigma, alpha_p, 0.0, ic=ic)
+    s_H_C, I_C, heat_C = compute_priority_heatmap(b['s_L'], b['sigma'], b['alpha'], 0.0, ic=b['ic'])
     draw_priority_heatmap(ax_C, fig, s_H_C, I_C, heat_C, y_min=y_min)
     for (xp, yp), col in zip([(0.9, 0.75), (0.6, 0.75)],
                              [COLORS['primary1'], COLORS['primary2']]):
         ax_C.scatter(xp, yp, s=40, c=col, marker='o', zorder=5)
 
-    s_H_D, I_D, heat_D = compute_priority_heatmap(s_L, sigma, alpha_p, 0.2, ic=ic)
+    s_H_D, I_D, heat_D = compute_priority_heatmap(b['s_L'], b['sigma'], b['alpha'], 0.2, ic=b['ic'])
     draw_priority_heatmap(ax_D, fig, s_H_D, I_D, heat_D, y_min=y_min)
     ax_D.scatter(0.9, 0.75, s=40, c=COLORS['primary2'], marker='o', zorder=5)
 
@@ -375,23 +363,17 @@ def figureR3_path_dependence(save=True):
 
     fig, ax = plt.subplots(1, 1, figsize=(8, 3))
 
-    # Plot I_H(t) — the rising objective severity (gray)
-    data0 = run_two_issue_system(
-        scenarios[0]['initial_conditions'],
-        scenarios[0]['s_H'], scenarios[0]['s_L'], scenarios[0]['sigma'],
-        scenarios[0]['alpha'], scenarios[0]['rho'],
-        scenarios[0]['I_H'], scenarios[0]['I_L'], t_final
-    )
-    ax.plot(data0['t'], data0['I_H'], color='gray', linestyle=LINESTYLES['solid'],
+    # Plot I_H(t) — the rising objective severity (gray). All scenarios share
+    # the same I_H(t) ramp; evaluate it directly via make_schedule rather than
+    # integrating the system just for this curve.
+    I_H_func = make_schedule(scenarios[0]['I_H'])
+    t_grid = np.linspace(0, t_final, 501)
+    I_H_curve = np.array([I_H_func(ti) for ti in t_grid])
+    ax.plot(t_grid, I_H_curve, color='gray', linestyle=LINESTYLES['solid'],
             linewidth=2.5, alpha=0.85, label=r'Severity of $H$')
 
     for scn in scenarios:
-        data = run_two_issue_system(
-            scn['initial_conditions'],
-            scn['s_H'], scn['s_L'], scn['sigma'],
-            scn['alpha'], scn['rho'],
-            scn['I_H'], scn['I_L'], t_final
-        )
+        data = run_scenario(scn, t_final)
         ax.plot(data['t'], data['P'], color=scn['color'], linestyle=scn['linestyle'],
                 linewidth=scn['linewidth'], alpha=0.85, label=scn['label'])
 
@@ -421,12 +403,7 @@ def figureR4_dynamic_connectivity(save=True):
     fig, ax = plt.subplots(1, 1, figsize=(8, 3))
 
     for scn in scenarios:
-        data = run_two_issue_system(
-            scn['initial_conditions'],
-            scn['s_H'], scn['s_L'], scn['sigma'],
-            scn['alpha'], scn['rho'],
-            scn['I_H'], scn['I_L'], t_final
-        )
+        data = run_scenario(scn, t_final)
         ax.plot(data['t'], data['P'], color=scn['color'], linestyle=scn['linestyle'],
                 linewidth=scn['linewidth'], alpha=0.85, label=scn['label'])
 
@@ -460,11 +437,7 @@ def figureD1_step_sH_drop(save=True):
     fig, ax = plt.subplots(1, 1, figsize=(8, 3))
 
     for scn in scenarios:
-        data = run_two_issue_system(
-            scn['initial_conditions'], scn['s_H'], scn['s_L'], scn['sigma'],
-            scn['alpha'], scn['rho'],
-            scn['I_H'], scn['I_L'], t_final=t_final, n_points=501
-        )
+        data = run_scenario(scn, t_final, n_points=501)
         ax.plot(data['t'], data['P'], color=scn['color'], linestyle=scn['linestyle'],
                 linewidth=scn['linewidth'], alpha=0.85, label=scn['label'])
 
@@ -488,19 +461,14 @@ def figureR2S_phase_diagrams_full(save=True):
     full y-range I_H = I_L in [0, 1]. Panel A is rho = 0, panel B is rho = 0.2.
     No marker dots and no text annotations.
     """
-    # Phase-diagram model parameters
-    C_1_H_0, C_2_H_0, C_1_L_0, C_2_L_0 = 0.55, 0.45, 0.45, 0.55
-    s_L = 0.4
-    sigma = 0.25
-    alpha_p = 3
+    b = _N_BASELINE
 
     fig, axs = plt.subplots(1, 2, figsize=(14, 6))
     ax_A, ax_B = axs
 
-    ic = (C_1_H_0, C_2_H_0, C_1_L_0, C_2_L_0)
-    s_H_A, I_A, heat_A = compute_priority_heatmap(s_L, sigma, alpha_p, 0.0, ic=ic)
+    s_H_A, I_A, heat_A = compute_priority_heatmap(b['s_L'], b['sigma'], b['alpha'], 0.0, ic=b['ic'])
     draw_priority_heatmap(ax_A, fig, s_H_A, I_A, heat_A)
-    s_H_B, I_B, heat_B = compute_priority_heatmap(s_L, sigma, alpha_p, 0.2, ic=ic)
+    s_H_B, I_B, heat_B = compute_priority_heatmap(b['s_L'], b['sigma'], b['alpha'], 0.2, ic=b['ic'])
     draw_priority_heatmap(ax_B, fig, s_H_B, I_B, heat_B)
 
     add_panel_label(ax_A, 'A', fontsize=25)
