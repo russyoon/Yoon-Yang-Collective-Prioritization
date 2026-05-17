@@ -63,15 +63,14 @@ def two_group_equilibrium(C_1_0, C_2_0, s, I, alpha, rho, max_iter=500, tol=1e-8
 
 
 def run_two_issue_system(initial_conditions, s_H, s_L, sigma, alpha, rho,
-                         I_H_func, I_L_func, t_final=300, n_points=501):
+                         I_H, I_L, t_final=300, n_points=501):
     """Integrate the two-issue (H, L) social-learning system via solve_ivp.
 
     Implements manuscript Eq. (1) with tau = 1, so dC/dt = C* - C and
     "Time" on figure axes is in units of tau.
 
-    Each of s_H, s_L, rho may be a scalar, a callable f(t), or a list
-    of (t_break, value) tuples (piecewise-constant schedule). I_H_func
-    and I_L_func must be callables returning objective severity over time.
+    Each of s_H, s_L, rho, I_H, I_L may be a scalar, a callable f(t), or
+    a list of (t_break, value) tuples (piecewise-constant schedule).
 
     Returns a dict with t, group/population concerns for H and L, the
     population priority P, and the time-resolved I_H, I_L, rho.
@@ -82,6 +81,8 @@ def run_two_issue_system(initial_conditions, s_H, s_L, sigma, alpha, rho,
     s_H_func = _make_schedule(s_H)
     s_L_func = _make_schedule(s_L)
     rho_func = _make_schedule(rho)
+    I_H_func = _make_schedule(I_H)
+    I_L_func = _make_schedule(I_L)
 
     def make_rhs(s_func, I_func):
         def rhs(t, y):
@@ -107,8 +108,8 @@ def run_two_issue_system(initial_conditions, s_H, s_L, sigma, alpha, rho,
     C_L = 0.5 * (C_1_L + C_2_L)
     P = compute_priority(C_H, C_L, sigma)
 
-    I_H = np.array([I_H_func(ti) for ti in t])
-    I_L = np.array([I_L_func(ti) for ti in t])
+    I_H_t = np.array([I_H_func(ti) for ti in t])
+    I_L_t = np.array([I_L_func(ti) for ti in t])
     rho_t = np.array([rho_func(ti) for ti in t])
 
     return {
@@ -116,7 +117,7 @@ def run_two_issue_system(initial_conditions, s_H, s_L, sigma, alpha, rho,
         'C_1_H': C_1_H, 'C_2_H': C_2_H, 'C_H': C_H,
         'C_1_L': C_1_L, 'C_2_L': C_2_L, 'C_L': C_L,
         'P': P,
-        'I_H': I_H, 'I_L': I_L, 'rho_t': rho_t,
+        'I_H': I_H_t, 'I_L': I_L_t, 'rho_t': rho_t,
     }
 
 

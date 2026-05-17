@@ -380,7 +380,7 @@ def figureR3_path_dependence(save=True):
         scenarios[0]['initial_conditions'],
         scenarios[0]['s_H'], scenarios[0]['s_L'], scenarios[0]['sigma'],
         scenarios[0]['alpha'], scenarios[0]['rho'],
-        scenarios[0]['I_H_func'], scenarios[0]['I_L_func'], t_final
+        scenarios[0]['I_H'], scenarios[0]['I_L'], t_final
     )
     ax.plot(data0['t'], data0['I_H'], color='gray', linestyle=LINESTYLES['solid'],
             linewidth=2.5, alpha=0.85, label=r'Severity of $H$')
@@ -390,7 +390,7 @@ def figureR3_path_dependence(save=True):
             scn['initial_conditions'],
             scn['s_H'], scn['s_L'], scn['sigma'],
             scn['alpha'], scn['rho'],
-            scn['I_H_func'], scn['I_L_func'], t_final
+            scn['I_H'], scn['I_L'], t_final
         )
         ax.plot(data['t'], data['P'], color=scn['color'], linestyle=scn['linestyle'],
                 linewidth=scn['linewidth'], alpha=0.85, label=scn['label'])
@@ -425,7 +425,7 @@ def figureR4_dynamic_connectivity(save=True):
             scn['initial_conditions'],
             scn['s_H'], scn['s_L'], scn['sigma'],
             scn['alpha'], scn['rho'],
-            scn['I_H_func'], scn['I_L_func'], t_final
+            scn['I_H'], scn['I_L'], t_final
         )
         ax.plot(data['t'], data['P'], color=scn['color'], linestyle=scn['linestyle'],
                 linewidth=scn['linewidth'], alpha=0.85, label=scn['label'])
@@ -463,7 +463,7 @@ def figureD1_step_sH_drop(save=True):
         data = run_two_issue_system(
             scn['initial_conditions'], scn['s_H'], scn['s_L'], scn['sigma'],
             scn['alpha'], scn['rho'],
-            scn['I_H_func'], scn['I_L_func'], t_final=t_final, n_points=501
+            scn['I_H'], scn['I_L'], t_final=t_final, n_points=501
         )
         ax.plot(data['t'], data['P'], color=scn['color'], linestyle=scn['linestyle'],
                 linewidth=scn['linewidth'], alpha=0.85, label=scn['label'])

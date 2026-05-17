@@ -162,7 +162,7 @@ def plot_two_issue_CEP(scenarios, t_final=300, linewidth=2, filename=None,
     ----------
     scenarios : list of dict
         Each dict contains: 'label', 'initial_conditions', 's_H', 's_L', 'sigma',
-        'alpha', 'rho', 'I_H_func', 'I_L_func'. Optional 'color', 'linestyle',
+        'alpha', 'rho', 'I_H', 'I_L'. Optional 'color', 'linestyle',
         'linewidth' override the default cycle.
     vertical : bool
         If True, 3x1 layout with shared x; else 1x3.
@@ -188,7 +188,7 @@ def plot_two_issue_CEP(scenarios, t_final=300, linewidth=2, filename=None,
             scn['initial_conditions'],
             scn['s_H'], scn['s_L'], scn['sigma'],
             scn['alpha'], scn['rho'],
-            scn['I_H_func'], scn['I_L_func'], t_final
+            scn['I_H'], scn['I_L'], t_final
         )
         t = data['t']
         label = scn.get('label', f"scenario {i+1}")
@@ -265,7 +265,7 @@ def run_N_baseline(s_H=None, rho=None):
     rho = b['rho'] if rho is None else rho
     return run_two_issue_system(
         b['ic'], s_H, b['s_L'], b['sigma'], b['alpha'], rho,
-        lambda t: b['I_H'], lambda t: b['I_L'],
+        b['I_H'], b['I_L'],
         t_final=b['t_final'], n_points=501
     )
 
@@ -278,8 +278,8 @@ def figureR4_scenarios():
             'initial_conditions': ivs,
             's_H': 0.9, 's_L': 0.4, 'sigma': 0.25, 'alpha': 3,
             'rho': [(0, 0.0), (50, 0.2)],
-            'I_H_func': lambda t: 0.75,
-            'I_L_func': lambda t: 0.75,
+            'I_H': 0.75,
+            'I_L': 0.75,
             'color': COLORS['primary1'],
             'linestyle': LINESTYLES['solid'],
             'linewidth': 2.5,
@@ -289,8 +289,8 @@ def figureR4_scenarios():
             'initial_conditions': ivs,
             's_H': 0.9, 's_L': 0.4, 'sigma': 0.25, 'alpha': 3,
             'rho': [(0, 0.0), (50, 0.5)],
-            'I_H_func': lambda t: 0.75,
-            'I_L_func': lambda t: 0.75,
+            'I_H': 0.75,
+            'I_L': 0.75,
             'color': COLORS['primary4'],
             'linestyle': LINESTYLES['dashed'],
             'linewidth': 2.5,
@@ -307,7 +307,6 @@ def figureR3_scenarios():
     ivs = (0, 0, 0.5, 0.5)
     rho0 = 0
     I_H_ramp = lambda t: np.clip(1/60*(t-20), 0, 1)
-    I_L_const = lambda t: 0.5
     styled = [
         (r'$s_H = 0.6$', 0.6, '#7f0000',          _BIG_DOTTED),
         (r'$s_H = 0.7$', 0.7, COLORS['primary4'], LINESTYLES['dashdot']),
@@ -318,8 +317,8 @@ def figureR3_scenarios():
             'label': lbl,
             'initial_conditions': ivs,
             's_H': s_H, 's_L': 0.4, 'sigma': 0.25, 'alpha': 3, 'rho': rho0,
-            'I_H_func': I_H_ramp,
-            'I_L_func': I_L_const,
+            'I_H': I_H_ramp,
+            'I_L': 0.5,
             'color': color,
             'linestyle': ls,
             'linewidth': 2.5,
@@ -348,8 +347,8 @@ def figureD1_scenarios():
             'initial_conditions': ic,
             's_H': make_step(floor),
             's_L': 0.4, 'sigma': 0.25, 'alpha': 3.0, 'rho': 0,
-            'I_H_func': lambda t: 1.0,
-            'I_L_func': lambda t: 0.5,
+            'I_H': 1.0,
+            'I_L': 0.5,
             'color': color,
             'linestyle': ls,
             'linewidth': 2.5,
