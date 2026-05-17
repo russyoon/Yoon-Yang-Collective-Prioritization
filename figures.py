@@ -11,8 +11,6 @@ import networkx as nx
 from model import (
     f,
     run_two_issue_system,
-    run_two_issue_system_ivp,
-    run_two_issue_system_dynamic_s_H,
     compute_priority_heatmap,
 )
 from plot_utils import (
@@ -378,7 +376,7 @@ def figureR3_path_dependence(save=True):
     fig, ax = plt.subplots(1, 1, figsize=(8, 3))
 
     # Plot I_H(t) — the rising objective severity (gray)
-    data0 = run_two_issue_system_ivp(
+    data0 = run_two_issue_system(
         scenarios[0]['initial_conditions'],
         scenarios[0]['s_H'], scenarios[0]['s_L'], scenarios[0]['sigma'],
         scenarios[0]['alpha'], scenarios[0]['rho'],
@@ -388,7 +386,7 @@ def figureR3_path_dependence(save=True):
             linewidth=2.5, alpha=0.85, label=r'Severity of $H$')
 
     for scn in scenarios:
-        data = run_two_issue_system_ivp(
+        data = run_two_issue_system(
             scn['initial_conditions'],
             scn['s_H'], scn['s_L'], scn['sigma'],
             scn['alpha'], scn['rho'],
@@ -423,7 +421,7 @@ def figureR4_dynamic_connectivity(save=True):
     fig, ax = plt.subplots(1, 1, figsize=(8, 3))
 
     for scn in scenarios:
-        data = run_two_issue_system_ivp(
+        data = run_two_issue_system(
             scn['initial_conditions'],
             scn['s_H'], scn['s_L'], scn['sigma'],
             scn['alpha'], scn['rho'],
@@ -462,7 +460,7 @@ def figureD1_step_sH_drop(save=True):
     fig, ax = plt.subplots(1, 1, figsize=(8, 3))
 
     for scn in scenarios:
-        data = run_two_issue_system_dynamic_s_H(
+        data = run_two_issue_system(
             scn['initial_conditions'], scn['s_H'], scn['s_L'], scn['sigma'],
             scn['alpha'], scn['rho'],
             scn['I_H_func'], scn['I_L_func'], t_final=t_final, n_points=501

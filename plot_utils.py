@@ -6,11 +6,7 @@ import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
 
-from model import (
-    run_two_issue_system,
-    run_two_issue_system_ivp,
-    compute_priority,
-)
+from model import run_two_issue_system
 
 # Setup directories
 current_dir = os.path.dirname(os.path.abspath(__file__)) if '__file__' in dir() else os.getcwd()
@@ -188,7 +184,7 @@ def plot_two_issue_CEP(scenarios, t_final=300, linewidth=2, filename=None,
         linestyle = scn.get('linestyle', SCENARIO_LINESTYLES[i % len(SCENARIO_LINESTYLES)])
         lw = scn.get('linewidth', linewidth)
 
-        data = run_two_issue_system_ivp(
+        data = run_two_issue_system(
             scn['initial_conditions'],
             scn['s_H'], scn['s_L'], scn['sigma'],
             scn['alpha'], scn['rho'],
@@ -267,7 +263,7 @@ def run_N_baseline(s_H=None, rho=None):
     b = _N_BASELINE
     s_H = b['s_H'] if s_H is None else s_H
     rho = b['rho'] if rho is None else rho
-    return run_two_issue_system_ivp(
+    return run_two_issue_system(
         b['ic'], s_H, b['s_L'], b['sigma'], b['alpha'], rho,
         lambda t: b['I_H'], lambda t: b['I_L'],
         t_final=b['t_final'], n_points=501
