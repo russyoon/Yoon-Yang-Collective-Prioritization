@@ -64,9 +64,8 @@ plt.rcParams.update({
 def add_panel_label(ax, label, x=-0.2, y=1.1, fontsize=None):
     """Add a panel label (e.g., 'A', 'B') to an axes.
 
-    `fontsize=None` falls back to `rcParams['font.size'] + 8` to preserve the
-    historical look for figures that haven't opted into the figureI1-style
-    typography. Pass an explicit fontsize (e.g. 25) to match figureI1.
+    If `fontsize` is None, falls back to `rcParams['font.size'] + 8`.
+    Pass an explicit fontsize (e.g. 25) for larger publication-scale labels.
     """
     if fontsize is None:
         fontsize = plt.rcParams['font.size'] + 8
@@ -210,7 +209,7 @@ def plot_two_issue_CEP(scenarios, t_final=300, linewidth=2, filename=None,
         axL.plot(t, data['C_2_L'], color=color, linestyle=linestyle, linewidth=lw,
                  alpha=0.85, label='_nolegend_')
 
-        # P(t): population prioritization
+        # P(t): mean of group priorities (returned as 'P' by run_two_issue_system)
         axP.plot(t, data['P'], color=color, linestyle=linestyle, linewidth=lw,
                  alpha=0.9, label=label)
 

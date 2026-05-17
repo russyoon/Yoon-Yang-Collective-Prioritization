@@ -125,7 +125,7 @@ def run_two_issue_system(initial_conditions, s_H, s_L, sigma, alpha, rho, I_H_fu
     rho : float, callable, or list of (t_break, rho_val) tuples
         Inter-group connectivity
     I_H_func, I_L_func : callable
-        Functions of time returning individual concern for issue H and L
+        Functions of time returning the objective severity I for issue H and L
     t_final : float
         Final simulation time
     n_points : int
@@ -187,10 +187,10 @@ def run_two_issue_system(initial_conditions, s_H, s_L, sigma, alpha, rho, I_H_fu
     C_1_L_arr = np.array(C_1_L_list)
     C_2_L_arr = np.array(C_2_L_list)
 
-    # Compute priorities
+    # Per-group priorities, then average across groups
     P_1 = compute_priority(C_1_H_arr, C_1_L_arr, sigma)
     P_2 = compute_priority(C_2_H_arr, C_2_L_arr, sigma)
-    P = (P_1 + P_2) / 2  # Population priority
+    P = (P_1 + P_2) / 2  # Mean of group priorities (P_bar)
 
     return {
         't': t_eval,
