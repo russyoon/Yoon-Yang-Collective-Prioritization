@@ -6,7 +6,10 @@ from tqdm.auto import tqdm
 
 
 def f(x, alpha):
-    """Nonlinear conformity response function."""
+    """Conformity response function.
+
+    Linear for alpha=1; an S-shaped normative-conformity curve for alpha > 1.
+    """
     return x**alpha / (x**alpha + (1 - x)**alpha)
 
 
@@ -255,8 +258,9 @@ def run_two_issue_system_ivp(initial_conditions, s_H, s_L, sigma, alpha, rho,
 def run_two_issue_system_dynamic_s_H(initial_conditions, s_H, s_L, sigma, alpha, rho,
                                       I_H_func, I_L_func, t_final=300, n_points=501):
     """
-    Run the two-issue system with time-varying s_H.
-    s_H can be scalar, callable, or schedule list of (t_break, s_H_value).
+    Run the two-issue system with time-varying social-learning strength.
+    Both s_H and s_L may each be scalar, callable, or a schedule list of
+    (t_break, value) tuples; in the manuscript only s_H is varied (Fig. 7).
     """
     C_1_H_0, C_2_H_0, C_1_L_0, C_2_L_0 = initial_conditions
     t_eval = np.linspace(0, t_final, n_points)

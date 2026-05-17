@@ -342,13 +342,17 @@ def figureR2_perturbations_and_phases(save=True):
 
     s_H_C, I_C, heat_C = compute_priority_heatmap(s_L, sigma, alpha_p, 0.0, ic=ic)
     draw_priority_heatmap(ax_C, fig, s_H_C, I_C, heat_C, y_min=y_min)
+    # Dots match the line colors in panel A: baseline (blue) and reduced-s_H (red)
     for (xp, yp), col in zip([(0.9, 0.75), (0.6, 0.75)],
-                             [COLORS['primary1'], COLORS['primary2']]):
-        ax_C.scatter(xp, yp, s=40, c=col, marker='o', zorder=5)
+                             [COLORS['primary1'], COLORS['primary4']]):
+        ax_C.scatter(xp, yp, s=60, c=col, marker='o', zorder=5,
+                     edgecolors='white', linewidths=1.5)
 
     s_H_D, I_D, heat_D = compute_priority_heatmap(s_L, sigma, alpha_p, 0.2, ic=ic)
     draw_priority_heatmap(ax_D, fig, s_H_D, I_D, heat_D, y_min=y_min)
-    ax_D.scatter(0.9, 0.75, s=40, c=COLORS['primary2'], marker='o', zorder=5)
+    # Dot matches the rho-perturbation line color in panel B (red)
+    ax_D.scatter(0.9, 0.75, s=60, c=COLORS['primary4'], marker='o', zorder=5,
+                 edgecolors='white', linewidths=1.5)
 
     # Panel letters in reading order (A C / B D)
     add_panel_label(ax_A, 'A', fontsize=25)
@@ -448,12 +452,12 @@ def figureR4_dynamic_connectivity(save=True):
 
 def figureD1_step_sH_drop(save=True):
     """
-    Figure D1 (Discussion section, first figure): three-scenario comparison
-    with a step drop in s_H at t = 50. All scenarios start at s_H = 0.9, then
-    drop to 0.8, 0.7, or 0.6. Shows how a sudden reduction in social learning
-    strength affects priority P(t) under constant severity (I_H = 1.0,
-    I_L = 0.5). The pre-step window t < 50 acts as a burn-in that brings the
-    system to R3's high-priority endpoint before the s_H drop.
+    Figure D1 (Discussion section, first figure; manuscript Fig. 7):
+    three-scenario comparison with a step drop in s_H at t = 50 under constant
+    severity (I_H = 1.0, I_L = 0.5). The pre-step window t < 50 equilibrates
+    the system at the high-social-learning, mis-prioritized state from
+    figureR3's s_H = 0.9 scenario. At t = 50, s_H drops to 0.8, 0.7, or 0.6;
+    larger drops produce faster and more complete recovery of priority for H.
     """
     scenarios = figureD1_scenarios()
     t_final = 100
@@ -519,7 +523,9 @@ def figureR2S_phase_diagrams_full(save=True):
 
 def figureR4S_dynamic_connectivity(save=True):
     """
-    Figure R4S (SI for R4): 3-panel version with P(t) on top, then C_H and C_L below.
+    Figure R4S (SI for figureR4; manuscript Fig. S2): 3-panel version with
+    population priority P(t) on top, and group-level concerns for issues H
+    and L (one curve per group) below.
     """
     return plot_two_issue_CEP(figureR4_scenarios(), t_final=100,
                               filename='figureR4S_dynamic_connectivity.pdf',
