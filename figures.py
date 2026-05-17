@@ -423,7 +423,7 @@ def figureR4_dynamic_connectivity(save=True):
     fig, ax = plt.subplots(1, 1, figsize=(8, 3))
 
     for scn in scenarios:
-        data = run_two_issue_system(
+        data = run_two_issue_system_ivp(
             scn['initial_conditions'],
             scn['s_H'], scn['s_L'], scn['sigma'],
             scn['alpha'], scn['rho'],

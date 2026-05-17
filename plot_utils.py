@@ -188,7 +188,7 @@ def plot_two_issue_CEP(scenarios, t_final=300, linewidth=2, filename=None,
         linestyle = scn.get('linestyle', SCENARIO_LINESTYLES[i % len(SCENARIO_LINESTYLES)])
         lw = scn.get('linewidth', linewidth)
 
-        data = run_two_issue_system(
+        data = run_two_issue_system_ivp(
             scn['initial_conditions'],
             scn['s_H'], scn['s_L'], scn['sigma'],
             scn['alpha'], scn['rho'],
