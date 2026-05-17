@@ -4,10 +4,10 @@ Numerical model and figure-generation code for the manuscript.
 
 ## Contents
 
-- `model.py` — pure-numerics core of the two-group, two-issue social-learning model (dynamics, equilibrium fixed-point solver, priority-heatmap sweep).
-- `plot_utils.py` — shared plotting infrastructure: style constants, panel helpers, baseline parameters, and scenario definitions for figures R3/R4/D1.
+- `model.py` — pure-numerics core of the two-group, two-issue social-learning model: `run_two_issue_system` (the IVP integrator), `compute_priority_heatmap` (equilibrium sweep), `make_schedule` (helper that coerces a scalar / callable / `(t_break, value)` list into a callable of time), `compute_priority`, and `two_group_equilibrium`.
+- `plot_utils.py` — shared plotting infrastructure: style constants, panel helpers, baseline parameters (`_N_BASELINE`), scenario definitions for Figs. 5/6/7, and the `run_scenario` convenience wrapper.
 - `figures.py` — figure scripts. Running `python figures.py` regenerates every figure in the paper.
-- `survey_data/` — public-source survey data used by Figure I1 (Gallup climate worry; Pew climate / economy priorities) and the original PDF reports they were transcribed from.
+- `survey_data/` — public-source survey data used by Fig. 1 (Gallup climate worry; Pew climate / economy priorities) and the original PDF reports they were transcribed from.
 
 ## Requirements
 
@@ -27,8 +27,8 @@ python figures.py
 
 Output PDFs are written to:
 
-- `main_figures/` — figures I1, M1, R1, R2, R3, R4, D1
-- `supp_figures/` — figures R2S, R4S
+- `main_figures/` — Figs. 1–7
+- `supp_figures/` — Figs. S1, S2
 
 Both directories are created on demand.
 
@@ -59,12 +59,33 @@ from figures import figureR2_perturbations_and_phases
 figureR2_perturbations_and_phases(save=True)
 ```
 
+## Calling the model directly
+
+`run_two_issue_system` integrates manuscript Eq. (1) with `tau = 1`
+(time is in units of tau). Each of `s_H`, `s_L`, `rho`, `I_H`, `I_L`
+may be a scalar, a callable `f(t)`, or a list of `(t_break, value)`
+tuples for a piecewise-constant schedule.
+
+```python
+from model import run_two_issue_system
+
+out = run_two_issue_system(
+    initial_conditions=(0.55, 0.45, 0.45, 0.55),
+    s_H=0.9, s_L=0.4, sigma=0.25, alpha=3,
+    rho=[(0, 0.0), (50, 0.2)],   # step jump at t=50
+    I_H=0.75, I_L=0.75,
+    t_final=100,
+)
+# out is a dict with keys: t, C_1_H, C_2_H, C_H, C_1_L, C_2_L, C_L,
+# P (population priority), I_H, I_L, rho_t.
+```
+
 ## Notes
 
-- The phase-diagram panels in Figure R2 and Figure R2S call
+- The phase-diagram panels in Fig. 4 and Fig. S1 call
   `compute_priority_heatmap`, which sweeps a 2D grid of fixed-point
   iterations and takes a few minutes to complete on a laptop.
-- Baseline parameters shared across R1/R2/R2S are defined once in
-  `plot_utils._N_BASELINE`; scenario-specific parameters for R3/R4/D1
-  live in `figureR3_scenarios`, `figureR4_scenarios`, and
-  `figureD1_scenarios`.
+- Baseline parameters shared across Figs. 3, 4, and S1 are defined
+  once in `plot_utils._N_BASELINE`; scenario-specific parameters for
+  Figs. 5, 6, and 7 live in `figureR3_scenarios`, `figureR4_scenarios`,
+  and `figureD1_scenarios`.
