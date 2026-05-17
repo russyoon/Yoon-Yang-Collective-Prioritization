@@ -342,17 +342,13 @@ def figureR2_perturbations_and_phases(save=True):
 
     s_H_C, I_C, heat_C = compute_priority_heatmap(s_L, sigma, alpha_p, 0.0, ic=ic)
     draw_priority_heatmap(ax_C, fig, s_H_C, I_C, heat_C, y_min=y_min)
-    # Dots match the line colors in panel A: baseline (blue) and reduced-s_H (red)
     for (xp, yp), col in zip([(0.9, 0.75), (0.6, 0.75)],
-                             [COLORS['primary1'], COLORS['primary4']]):
-        ax_C.scatter(xp, yp, s=60, c=col, marker='o', zorder=5,
-                     edgecolors='white', linewidths=1.5)
+                             [COLORS['primary1'], COLORS['primary2']]):
+        ax_C.scatter(xp, yp, s=40, c=col, marker='o', zorder=5)
 
     s_H_D, I_D, heat_D = compute_priority_heatmap(s_L, sigma, alpha_p, 0.2, ic=ic)
     draw_priority_heatmap(ax_D, fig, s_H_D, I_D, heat_D, y_min=y_min)
-    # Dot matches the rho-perturbation line color in panel B (red)
-    ax_D.scatter(0.9, 0.75, s=60, c=COLORS['primary4'], marker='o', zorder=5,
-                 edgecolors='white', linewidths=1.5)
+    ax_D.scatter(0.9, 0.75, s=40, c=COLORS['primary2'], marker='o', zorder=5)
 
     # Panel letters in reading order (A C / B D)
     add_panel_label(ax_A, 'A', fontsize=25)
