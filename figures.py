@@ -80,13 +80,33 @@ def figureI1_survey_firstdiff_scatter(save=True):
         ax.annotate(str(yr), (dx, dy), textcoords='offset points',
                     xytext=(5, 5), fontsize=12, color='#555555')
 
-    slope, intercept = np.polyfit(d_climate.values, d_economy.values, 1)
+    from scipy import stats
+    import statsmodels.api as sm
+
+    x_arr = d_climate.values
+    y_arr = d_economy.values
+    ols_res = sm.OLS(y_arr, sm.add_constant(x_arr)).fit()
+    intercept, slope = ols_res.params
+    se_intercept, se_slope = ols_res.bse
+    t_intercept, t_slope = ols_res.tvalues
+    p_intercept, p_slope = ols_res.pvalues
+
     x_fit = np.linspace(d_climate.min(), d_climate.max(), 100)
     ax.plot(x_fit, slope * x_fit + intercept, color='#c62828', lw=1.5, ls='--')
 
-    r = np.corrcoef(d_climate.values, d_economy.values)[0, 1]
+    r, p_pearson = stats.pearsonr(x_arr, y_arr)
     ax.text(0.05, 0.95, f'r = {r:.2f}', transform=ax.transAxes,
             fontsize=15, va='top', color='#c62828')
+
+    print(f"[figureI1 Panel B] n = {int(ols_res.nobs)}  "
+          f"Pearson r = {r:+.3f}  p = {p_pearson:.3e}  "
+          f"R^2 = {ols_res.rsquared:.3f}  "
+          f"F({int(ols_res.df_model)},{int(ols_res.df_resid)}) = {ols_res.fvalue:.2f}, "
+          f"p = {ols_res.f_pvalue:.3e}  "
+          f"| OLS slope = {slope:+.3f}  (SE = {se_slope:.3f}, "
+          f"t({int(ols_res.df_resid)}) = {t_slope:+.2f}, p = {p_slope:.3e})  "
+          f"intercept = {intercept:+.3f}  (SE = {se_intercept:.3f}, "
+          f"t({int(ols_res.df_resid)}) = {t_intercept:+.2f}, p = {p_intercept:.3f})")
 
     lim = max(abs(d_climate.min()), abs(d_climate.max()),
               abs(d_economy.min()), abs(d_economy.max())) * 1.3
