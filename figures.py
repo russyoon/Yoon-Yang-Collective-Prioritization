@@ -217,7 +217,7 @@ def figureM1_network_and_conformity(save=True):
     return fig
 
 
-def figureR1_two_issue_dynamics(save=True, wide=False):
+def figureR1_two_issue_dynamics(save=True):
     """
     Figure R1 (manuscript Fig. 3): high social learning produces concern
     polarization and underprioritization. Three-panel time series under the
@@ -226,15 +226,6 @@ def figureR1_two_issue_dynamics(save=True, wide=False):
     B: population-level concern for each issue (C_H(t) and C_L(t))
     C: group-level concern for each issue (one curve per group), showing
        between-group divergence for H
-
-    Parameters
-    ----------
-    wide : bool, default False
-        Aspect-ratio variant. If False, uses the tall layout (figsize=(6, 9))
-        and saves as figureR1_two_issue_dynamics.pdf. If True, uses the
-        wider/shorter layout (figsize=(7, 7)) and saves as
-        figureR1_two_issue_dynamics_wide.pdf. Plot content is identical
-        between the two variants.
     """
     data = run_N_baseline()
     t = data['t']
@@ -246,8 +237,7 @@ def figureR1_two_issue_dynamics(save=True, wide=False):
         borderpad=0.3, borderaxespad=0.3, columnspacing=0.6, frameon=True,
     )
 
-    figsize = (7, 7) if wide else (6, 9)
-    fig, axs = plt.subplots(3, 1, figsize=figsize, sharex=True)
+    fig, axs = plt.subplots(3, 1, figsize=(6, 9), sharex=True)
     ax_A, ax_B, ax_C = axs
 
     # Panel A: priorities (H = blue, L = orange)
@@ -293,8 +283,7 @@ def figureR1_two_issue_dynamics(save=True, wide=False):
         add_panel_label(ax, letter)
 
     if save:
-        suffix = '_wide' if wide else ''
-        fname = os.path.join(figures_dir, f'figureR1_two_issue_dynamics{suffix}.pdf')
+        fname = os.path.join(figures_dir, 'figureR1_two_issue_dynamics.pdf')
         plt.savefig(fname)
         print(f"Saved: {fname}")
 
@@ -663,7 +652,6 @@ def generate_all_figures():
     print("Results")
     print("=" * 60)
     figureR1_two_issue_dynamics(save=True)
-    figureR1_two_issue_dynamics(save=True, wide=True)
     figureR2_perturbations_and_phases(save=True)
     figureR3_delayed_prioritization(save=True)
     figureR4_dynamic_connectivity(save=True)
