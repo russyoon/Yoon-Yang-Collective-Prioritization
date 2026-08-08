@@ -28,7 +28,7 @@ python figures.py
 Output PDFs are written to:
 
 - `main_figures/` — Figs. 1–7
-- `supp_figures/` — Figs. S1, S2
+- `supp_figures/` — Figs. S1–S3
 
 Both directories are created on demand.
 
@@ -40,11 +40,12 @@ Both directories are created on demand.
 | Fig. 2  | `figureM1_network_and_conformity`    | Model |
 | Fig. 3  | `figureR1_two_issue_dynamics`        | Results |
 | Fig. 4  | `figureR2_perturbations_and_phases`  | Results |
-| Fig. 5  | `figureR3_path_dependence`           | Results |
+| Fig. 5  | `figureR3_delayed_prioritization`    | Results |
 | Fig. 6  | `figureR4_dynamic_connectivity`      | Results |
 | Fig. 7  | `figureD1_step_sH_drop`              | Discussion |
 | Fig. S1 | `figureR2S_phase_diagrams_full`      | Supplementary |
-| Fig. S2 | `figureR4S_dynamic_connectivity`     | Supplementary |
+| Fig. S2 | `figureR3S_delayed_prioritization`   | Supplementary |
+| Fig. S3 | `figureR4S_dynamic_connectivity`     | Supplementary |
 
 Note: `figureR1_two_issue_dynamics` is called twice in `generate_all_figures`
 — once with default `wide=False` (saved as `figureR1_two_issue_dynamics.pdf`)
@@ -61,10 +62,11 @@ figureR2_perturbations_and_phases(save=True)
 
 ## Calling the model directly
 
-`run_two_issue_system` integrates manuscript Eq. (1) with `tau = 1`
-(time is in units of tau). Each of `s_H`, `s_L`, `rho`, `I_H`, `I_L`
-may be a scalar, a callable `f(t)`, or a list of `(t_break, value)`
-tuples for a piecewise-constant schedule.
+`run_two_issue_system` integrates manuscript Eqs. (1)–(3) with `tau = 1`
+(time is in units of tau) and computes the population priority `P` via
+Eq. (4). Each of `s_H`, `s_L`, `rho`, `I_H`, `I_L` may be a scalar, a
+callable `f(t)`, or a list of `(t_break, value)` tuples for a
+piecewise-constant schedule.
 
 ```python
 from model import run_two_issue_system

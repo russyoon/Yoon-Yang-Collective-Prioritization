@@ -1,4 +1,5 @@
-"""Pure-numerics core for the social-learning / opinion-dynamics model."""
+"""Pure-numerics core of the two-group, two-issue dynamical model of
+collective issue prioritization (manuscript Eqs. (1)-(4))."""
 
 import numpy as np
 from scipy.integrate import solve_ivp
@@ -6,7 +7,7 @@ from tqdm.auto import tqdm
 
 
 def f(x, alpha):
-    """Conformity response function.
+    """Conformity response function f(X; alpha) (manuscript Fig. 2B).
 
     Linear for alpha=1; an S-shaped normative-conformity curve for alpha > 1.
     """
@@ -14,7 +15,8 @@ def f(x, alpha):
 
 
 def compute_priority(C_H, C_L, sigma):
-    """Compute priority of issue H over L using logit choice."""
+    """Probability that issue H is prioritized compared to L, using the
+    logit choice rule of manuscript Eq. (4)."""
     return np.exp(C_H / sigma) / (np.exp(C_H / sigma) + np.exp(C_L / sigma))
 
 
@@ -50,7 +52,8 @@ def make_schedule(param):
 
 
 def two_group_equilibrium(C_1_0, C_2_0, s, I, alpha, rho, max_iter=500, tol=1e-8):
-    """Fixed-point iteration for two-group equilibrium on a single issue."""
+    """Fixed-point iteration for the two-group equilibrium concerns on a
+    single issue (steady state of manuscript Eqs. (1)-(3))."""
     C_1, C_2 = float(C_1_0), float(C_2_0)
     for _ in range(max_iter):
         next_C_1 = (1 - s) * I + s * f((C_1 + rho * C_2) / (1 + rho), alpha)
@@ -64,10 +67,11 @@ def two_group_equilibrium(C_1_0, C_2_0, s, I, alpha, rho, max_iter=500, tol=1e-8
 
 def run_two_issue_system(initial_conditions, s_H, s_L, sigma, alpha, rho,
                          I_H, I_L, t_final=300, n_points=501):
-    """Integrate the two-issue (H, L) social-learning system via solve_ivp.
+    """Integrate the two-issue (H, L) concern-formation dynamics via solve_ivp.
 
-    Implements manuscript Eq. (1) with tau = 1, so dC/dt = C* - C and
-    "Time" on figure axes is in units of tau.
+    Implements manuscript Eqs. (1)-(3) with tau = 1, so dC/dt = C* - C and
+    "Time" on figure axes is in units of tau. The population priority P is
+    computed from the population-level concerns via Eq. (4).
 
     Each of s_H, s_L, rho, I_H, I_L may be a scalar, a callable f(t), or
     a list of (t_break, value) tuples (piecewise-constant schedule).
@@ -123,9 +127,10 @@ def run_two_issue_system(initial_conditions, s_H, s_L, sigma, alpha, rho,
 
 def compute_priority_heatmap(s_L, sigma, alpha, rho_val,
                               ic=(0.55, 0.45, 0.45, 0.55), n_I=501):
-    """Compute equilibrium priority P over the (s_H, I=I_H=I_L) grid.
+    """Compute equilibrium priority P* over the (s_H, I=I_H=I_L) grid.
 
-    Shared by figureR2 (zoomed y-range view) and figureR2S (full y-range view).
+    Shared by figureR2 (manuscript Fig. 4C/F, upper-half severity view) and
+    figureR2S (Fig. S1, full severity view).
     """
     C_1_H_0, C_2_H_0, C_1_L_0, C_2_L_0 = ic
     s_H_values = np.linspace(s_L, 1, int((1 - s_L) * 1000) + 1)

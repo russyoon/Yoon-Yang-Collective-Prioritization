@@ -6,6 +6,8 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MultipleLocator
+from matplotlib.collections import LineCollection
+from matplotlib.colors import rgb_to_hsv, hsv_to_rgb
 import networkx as nx
 
 from model import (
@@ -34,12 +36,16 @@ from plot_utils import (
 
 def figureI1_survey_firstdiff_scatter(save=True):
     """
-    Figure I1 (Introduction section, first figure): two-panel survey data
-    analysis.
-    Panel A: Gallup climate worry, Pew climate priority, Pew economy priority
-             (restricted to overlapping years).
-    Panel B: Scatter of year-over-year first differences of Pew climate vs
-             economy priority, highlighting the trade-off (quadrants II and IV).
+    Figure I1 (Introduction section; manuscript Fig. 1): majority concern over
+    an issue does not translate into majority priority.
+    Panel A: percentage of adults expressing concern about climate change
+             (Gallup) and percentage stating climate change or the economy
+             should be a top national priority (Pew), among U.S. adults,
+             2007-2024 (restricted to overlapping years).
+    Panel B: year-over-year changes in climate and economy priority (annual
+             first differences of the Pew series), with their Pearson
+             correlation and the OLS fit of Delta economy priority on
+             Delta climate priority (statistics reported in the SI).
     """
     import pandas as pd
 
@@ -139,11 +145,12 @@ def figureI1_survey_firstdiff_scatter(save=True):
 
 def figureM1_network_and_conformity(save=True):
     """
-    Figure M1 (Model section, first figure): side-by-side overview of the
-    two ingredients of the model. The left panel shows the two-group network
-    structure as two stacked sub-panels (rho = 0 on top, rho = 0.5 below).
-    The right panel shows the conformity response S-curve f(X; alpha) for
-    several alpha values, spanning the full figure height.
+    Figure M1 (Model section; manuscript Fig. 2): model components.
+    Panel A (left): two-group network with full within-group connectivity
+    (learning), as two stacked sub-panels — no intergroup learning (rho = 0)
+    on top, moderate intergroup learning (rho = 0.5) below.
+    Panel B (right): conformity response function f(X; alpha) for varying
+    levels of normative conformity, spanning the full figure height.
     """
     # --- Panel A (left): two stacked network sub-panels ---
     group1 = [f'G1_{i}' for i in range(1, 6)]
@@ -156,8 +163,8 @@ def figureM1_network_and_conformity(save=True):
         pos[node] = (1.5 + np.sin(angle[i]), np.cos(angle[i]))
     node_colors = ['blue' if n.startswith('G1') else 'red' for n in group1 + group2]
     rho_values = [0, 0.5]
-    subtitles = [r'No inter-group learning ($\rho=0$)',
-                 r'Moderate inter-group learning ($\rho=0.5$)']
+    subtitles = [r'No intergroup learning ($\rho=0$)',
+                 r'Moderate intergroup learning ($\rho=0.5$)']
 
     # Layout: 2x2 mosaic with conformity panel spanning both rows on the right.
     fig = plt.figure(figsize=(14, 6))
@@ -174,7 +181,7 @@ def figureM1_network_and_conformity(save=True):
         G = _build_network(group1, group2, rho_val, rng)
         nx.draw_networkx_nodes(G, pos, node_color=node_colors, node_size=400, ax=ax)
         nx.draw_networkx_edges(G, pos, edge_color='gray', width=1.5, ax=ax)
-        ax.set_title(subtitle, fontsize=10, style='italic')
+        ax.set_title(subtitle, fontsize=20, style='italic')
         ax.axis('off')
 
     add_panel_label(ax_net_top, 'A', x=0.05, y=1.05, fontsize=25)
@@ -212,10 +219,13 @@ def figureM1_network_and_conformity(save=True):
 
 def figureR1_two_issue_dynamics(save=True, wide=False):
     """
-    Figure R1: Three-panel time series under the shared baseline.
-    A: P(t) and 1 - P(t)
-    B: population concern C_H(t) and C_L(t)
-    C: group trajectories C_{1H}(t) and C_{2H}(t)
+    Figure R1 (manuscript Fig. 3): high social learning produces concern
+    polarization and underprioritization. Three-panel time series under the
+    baseline parameters (Table S1).
+    A: population priority for H and L (P(t) and 1 - P(t))
+    B: population-level concern for each issue (C_H(t) and C_L(t))
+    C: group-level concern for each issue (one curve per group), showing
+       between-group divergence for H
 
     Parameters
     ----------
@@ -256,12 +266,18 @@ def figureR1_two_issue_dynamics(save=True, wide=False):
     ax_B.set_ylabel("Population concern\n" + r"for issue $i$ ($\bar{C}_i$)")
     ax_B.legend(loc='lower right', **legend_kwargs)
 
-    # Panel C: group-level trajectories for issue H (purple)
-    ax_C.plot(t, data['C_1_H'], color='#6a1b9a', linewidth=linewidth, linestyle='-.',
-              alpha=0.85, label='Group 1')
-    ax_C.plot(t, data['C_2_H'], color='#6a1b9a', linewidth=linewidth, linestyle=':',
-              alpha=0.85, label='Group 2')
-    ax_C.set_ylabel("Group concern\n" + r"for issue H ($C_{gH}$)")
+    # Panel C: group-level trajectories for issue H (green) and issue L (purple),
+    # using colors distinct from the priority panels (blue/orange)
+    col_H, col_L = COLORS['primary3'], '#6a1b9a'
+    ax_C.plot(t, data['C_1_H'], color=col_H, linewidth=linewidth, linestyle='-',
+              alpha=0.85, label='issue H group 1')
+    ax_C.plot(t, data['C_2_H'], color=col_H, linewidth=linewidth, linestyle=':',
+              alpha=0.85, label='issue H group 2')
+    ax_C.plot(t, data['C_1_L'], color=col_L, linewidth=linewidth, linestyle='-',
+              alpha=0.85, label='issue L group 1')
+    ax_C.plot(t, data['C_2_L'], color=col_L, linewidth=linewidth, linestyle=':',
+              alpha=0.85, label='issue L group 2')
+    ax_C.set_ylabel("Group concern\n" + r"for issue $i$ ($C_{gi}$)")
     ax_C.set_xlabel("Time")
     ax_C.legend(loc='center right', **legend_kwargs)
 
@@ -286,17 +302,82 @@ def figureR1_two_issue_dynamics(save=True, wide=False):
     return fig
 
 
+# Markers highlighting the operating points, shared between each row's slice
+# panel and its companion heatmap: (s_H, color, shape). Distinct shapes let the
+# reader track a point across panels even when two points share a color.
+_R2_MARKERS_RHO0 = [(0.9, COLORS['primary1'], 'o'),   # baseline
+                    (0.6, COLORS['primary2'], 's')]   # reduced social learning
+_R2_MARKERS_RHO02 = [(0.9, COLORS['primary2'], '^')]  # intergroup learning
+
+
+def _draw_priority_slice(ax, s_H_values, P_slice, markers, fontscale=1.0,
+                         ylabel_fontsize=None, xticks=None):
+    """Draw a horizontal slice P(s_H) of a phase heatmap taken at fixed severity.
+
+    The line is colored by P with the same coolwarm map as the heatmaps, but
+    with boosted saturation so it contrasts against the white background, and is
+    broken at the discontinuous priority drop so no spurious vertical segment is
+    drawn. `markers` is a list of (s_H, color, shape) matching the dots on the
+    companion heatmap. Axis styling matches the time-series panels (A, D).
+    `fontscale` multiplies the label/tick font sizes; `ylabel_fontsize` overrides
+    the y-axis label size (defaulting to 20*fontscale); `xticks`, if given, sets
+    the x-axis tick positions.
+    """
+    P_slice = np.asarray(P_slice)
+    pts = np.array([s_H_values, P_slice]).T.reshape(-1, 1, 2)
+    segs = np.concatenate([pts[:-1], pts[1:]], axis=1)
+    seg_P = 0.5 * (P_slice[:-1] + P_slice[1:])
+    keep = np.abs(np.diff(P_slice)) <= 0.15          # drop the segment spanning the jump
+    colors = rgb_to_hsv(plt.cm.coolwarm(plt.Normalize(0, 1)(seg_P))[:, :3])
+    colors[:, 1] = np.clip(colors[:, 1] * 1.8, 0, 1)  # boost saturation
+    colors[:, 2] = np.clip(colors[:, 2] * 0.82, 0, 1)  # darken for contrast on white
+    lc = LineCollection(segs[keep], colors=hsv_to_rgb(colors)[keep], linewidth=3.5, zorder=3)
+    ax.add_collection(lc)
+
+    for s_H_pt, col, shape in markers:
+        P_pt = float(P_slice[np.argmin(np.abs(s_H_values - s_H_pt))])
+        ax.scatter(s_H_pt, P_pt, s=90, c=col, marker=shape, zorder=5)
+
+    ax.set_xlim(s_H_values[0], s_H_values[-1])
+    ax.set_ylim(-0.05, 1.05)
+    ax.set_yticks([0, 0.25, 0.5, 0.75, 1])
+    if xticks is not None:
+        ax.set_xticks(xticks)
+    ax.tick_params(axis='both', labelsize=15 * fontscale)
+    ax.set_xlabel(r"Social Learning for H ($s_H$)", fontsize=20 * fontscale)
+    ax.set_ylabel(r"Equilibrium Priority of H ($P^*$)",
+                  fontsize=ylabel_fontsize if ylabel_fontsize is not None else 20 * fontscale)
+    ax.axhline(y=0.5, color='black', linestyle='--', linewidth=1.2, alpha=0.5, zorder=0)
+    ax.grid(True, linestyle='-', linewidth=0.5, alpha=0.5)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+
+
 def figureR2_perturbations_and_phases(save=True):
     """
-    Figure R2: 2x2 grid pairing perturbation time series (left column) with
-    priority phase diagrams (right column).
+    Figure R2 (manuscript Fig. 4): both reduced social learning and intergroup
+    learning can restore prioritization of H. 2x3 grid. Left column:
+    perturbation time series. Middle column: horizontal slices P*(s_H) of the
+    equilibrium heatmaps at fixed severity I = 0.75. Right column: equilibrium
+    priority heatmaps over s_H and shared objective severity (I_H = I_L).
 
-        A (s_H perturbation, rho=0)    |   C (phase heatmap, rho=0)
-        B (rho perturbation, s_H=0.9)  |   D (phase heatmap, rho=0.2)
+        A (s_H perturbation, rho=0) | B (slice, rho=0)   | C (heatmap, rho=0)
+        D (rho perturbation)        | E (slice, rho=0.2) | F (heatmap, rho=0.2)
+
+    Markers highlight the same operating points across each row's slice and
+    heatmap (circle: s_H=0.9, rho=0; square: s_H=0.6, rho=0; triangle: s_H=0.9,
+    rho=0.2). The slices show priority dropping discontinuously as s_H increases
+    past a threshold.
     """
     b = _N_BASELINE
     t_final = b['t_final']
     linewidth = 2.5
+    I_slice = 0.75  # severity level at which the middle-column slices are taken
+    fs = 1.3              # font-size scale for the whole figure (labels/ticks)
+    eq_label_fs = 23      # y-axis + colorbar label size for the equilibrium panels (B,C,E,F)
+    eq_xticks = [0.4, 0.6, 0.8, 1.0]  # s_H ticks for the equilibrium panels
+    eq_cbar_labelpad = 16  # gap between colorbar and its label
+    eq_cbar_pad = 0.04     # gap between heatmap and colorbar
 
     data_base = run_N_baseline()
     data_sH = run_N_baseline(s_H=0.6)
@@ -305,62 +386,73 @@ def figureR2_perturbations_and_phases(save=True):
 
     ts_legend_kwargs = dict(
         labelspacing=0.3, handlelength=3.0, handleheight=1.5, handletextpad=0.5,
-        borderpad=0.3, borderaxespad=0.3, columnspacing=0.6, frameon=True, fontsize=12,
+        borderpad=0.3, borderaxespad=0.3, columnspacing=0.6, frameon=True, fontsize=15,
     )
 
     y_min = 0.5
 
-    # --- Figure layout: 2 rows x 2 cols ---
-    fig, axs = plt.subplots(2, 2, figsize=(14, 12))
-    ax_A, ax_C = axs[0, 0], axs[0, 1]
-    ax_B, ax_D = axs[1, 0], axs[1, 1]
+    # --- Figure layout: 2 rows x 3 cols (A B C / D E F) ---
+    fig, axs = plt.subplots(2, 3, figsize=(21, 12))
+    ax_A, ax_B, ax_C = axs[0, 0], axs[0, 1], axs[0, 2]
+    ax_D, ax_E, ax_F = axs[1, 0], axs[1, 1], axs[1, 2]
 
     # === Panel A: s_H perturbation time series ===
     ax_A.plot(t, data_base['P'], color=COLORS['primary1'], linewidth=linewidth, linestyle='-',
               alpha=0.9, label='Baseline')
     ax_A.plot(data_sH['t'], data_sH['P'], color=COLORS['primary4'], linewidth=linewidth, linestyle='-.',
               alpha=0.9, label=r'Reduced Social Learning ($s_H = 0.6$)')
-    ax_A.set_ylabel(r"Priority of H ($P$)", fontsize=20)
-    ax_A.set_xlabel("Time", fontsize=20)
+    ax_A.set_ylabel(r"Priority of H ($P$)", fontsize=20 * fs)
+    ax_A.set_xlabel("Time", fontsize=20 * fs)
     ax_A.legend(loc='upper right', **ts_legend_kwargs)
 
-    # === Panel B: rho perturbation time series ===
-    ax_B.plot(t, data_base['P'], color=COLORS['primary1'], linewidth=linewidth, linestyle='-',
+    # === Panel D: rho perturbation time series ===
+    ax_D.plot(t, data_base['P'], color=COLORS['primary1'], linewidth=linewidth, linestyle='-',
               alpha=0.9, label='Baseline')
-    ax_B.plot(data_rho['t'], data_rho['P'], color=COLORS['primary4'], linewidth=linewidth, linestyle='--',
-              alpha=0.9, label=r'with Inter-group Learning ($\rho = 0.2$)')
-    ax_B.set_ylabel(r"Priority of H ($P$)", fontsize=20)
-    ax_B.set_xlabel("Time", fontsize=20)
-    ax_B.legend(loc='upper right', **ts_legend_kwargs)
+    ax_D.plot(data_rho['t'], data_rho['P'], color=COLORS['primary4'], linewidth=linewidth, linestyle='--',
+              alpha=0.9, label=r'with Intergroup Learning ($\rho = 0.2$)')
+    ax_D.set_ylabel(r"Priority of H ($P$)", fontsize=20 * fs)
+    ax_D.set_xlabel("Time", fontsize=20 * fs)
+    ax_D.legend(loc='upper right', **ts_legend_kwargs)
 
     # Time-series axis formatting
-    for ax in [ax_A, ax_B]:
+    for ax in [ax_A, ax_D]:
         ax.set_xlim(0, t_final)
         ax.set_ylim(-0.05, 1.05)
         ax.set_yticks([0, 0.25, 0.5, 0.75, 1])
         ax.xaxis.set_major_locator(MultipleLocator(10))
-        ax.tick_params(axis='both', labelsize=15)
+        ax.tick_params(axis='both', labelsize=15 * fs)
         ax.axhline(y=0.5, color='black', linestyle='--', linewidth=1.2, alpha=0.5, zorder=0)
         ax.grid(True, linestyle='-', linewidth=0.5, alpha=0.5)
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
 
-    # === Panels C & D: phase heatmaps (zoomed y-range, with marker dots) ===
+    # === Right column: phase heatmaps (zoomed y-range, with marker dots) ===
     s_H_C, I_C, heat_C = compute_priority_heatmap(b['s_L'], b['sigma'], b['alpha'], 0.0, ic=b['ic'])
-    draw_priority_heatmap(ax_C, fig, s_H_C, I_C, heat_C, y_min=y_min)
-    for (xp, yp), col in zip([(0.9, 0.75), (0.6, 0.75)],
-                             [COLORS['primary1'], COLORS['primary2']]):
-        ax_C.scatter(xp, yp, s=40, c=col, marker='o', zorder=5)
+    draw_priority_heatmap(ax_C, fig, s_H_C, I_C, heat_C, y_min=y_min, fontscale=fs,
+                          ylabel_fontsize=eq_label_fs, cbar_label_fontsize=eq_label_fs, xticks=eq_xticks,
+                          cbar_labelpad=eq_cbar_labelpad, cbar_pad=eq_cbar_pad)
+    for s_H_pt, col, shape in _R2_MARKERS_RHO0:
+        ax_C.scatter(s_H_pt, I_slice, s=90, c=col, marker=shape, zorder=5)
 
     s_H_D, I_D, heat_D = compute_priority_heatmap(b['s_L'], b['sigma'], b['alpha'], 0.2, ic=b['ic'])
-    draw_priority_heatmap(ax_D, fig, s_H_D, I_D, heat_D, y_min=y_min)
-    ax_D.scatter(0.9, 0.75, s=40, c=COLORS['primary2'], marker='o', zorder=5)
+    draw_priority_heatmap(ax_F, fig, s_H_D, I_D, heat_D, y_min=y_min, fontscale=fs,
+                          ylabel_fontsize=eq_label_fs, cbar_label_fontsize=eq_label_fs, xticks=eq_xticks,
+                          cbar_labelpad=eq_cbar_labelpad, cbar_pad=eq_cbar_pad)
+    for s_H_pt, col, shape in _R2_MARKERS_RHO02:
+        ax_F.scatter(s_H_pt, I_slice, s=90, c=col, marker=shape, zorder=5)
 
-    # Panel letters in reading order (A C / B D)
-    add_panel_label(ax_A, 'A', fontsize=25)
-    add_panel_label(ax_C, 'C', fontsize=25)
-    add_panel_label(ax_B, 'B', fontsize=25)
-    add_panel_label(ax_D, 'D', fontsize=25)
+    # === Middle column: horizontal slices of the heatmaps at I = I_slice ===
+    # Extract the slice directly from the heatmap rows so B/E align exactly with C/F.
+    row_C = int(np.argmin(np.abs(I_C - I_slice)))
+    row_D = int(np.argmin(np.abs(I_D - I_slice)))
+    _draw_priority_slice(ax_B, s_H_C, heat_C[row_C, :], _R2_MARKERS_RHO0, fontscale=fs,
+                         ylabel_fontsize=eq_label_fs, xticks=eq_xticks)
+    _draw_priority_slice(ax_E, s_H_D, heat_D[row_D, :], _R2_MARKERS_RHO02, fontscale=fs,
+                         ylabel_fontsize=eq_label_fs, xticks=eq_xticks)
+
+    # Panel letters in reading order (A B C / D E F)
+    for letter, ax in zip('ABCDEF', [ax_A, ax_B, ax_C, ax_D, ax_E, ax_F]):
+        add_panel_label(ax, letter, fontsize=34)
 
     if save:
         fname = os.path.join(figures_dir, 'figureR2_perturbations_and_phases.pdf')
@@ -371,23 +463,22 @@ def figureR2_perturbations_and_phases(save=True):
     return fig
 
 
-def figureR3_path_dependence(save=True):
-    """
-    Figure R3: Single-panel figure overlaying rising objective severity
-    I_H(t) and population priority P(t) for three social-learning strengths
-    (s_H = 0.6, 0.7, 0.9). Shows how stronger social learning leads to
-    delayed or failed prioritization as severity ramps up.
-    """
-    t_final = 100
-    scenarios = figureR3_scenarios()
+def _draw_delayed_prioritization(ax, constant_IH, t_final=100):
+    """Overlay objective severity I_H(t) (gray) and the priority of H over L
+    at three levels of social learning (s_H = 0.6, 0.7, 0.9) on `ax`.
 
-    fig, ax = plt.subplots(1, 1, figsize=(8, 3))
-
-    # Plot I_H(t) — the rising objective severity (gray). All scenarios share
-    # the same I_H(t) ramp; evaluate it directly via make_schedule rather than
-    # integrating the system just for this curve.
-    I_H_func = make_schedule(scenarios[0]['I_H'])
+    Shared by figureR3 (rising severity) and figureR3S (severity held constant
+    at its maximum). Social learning alone sets the equilibrium priority; the
+    gradual increase in severity affects only the timing, delaying when
+    priority reaches that equilibrium.
+    """
     t_grid = np.linspace(0, t_final, 501)
+    scenarios = figureR3_scenarios(constant_IH=constant_IH)
+
+    # Plot I_H(t) — the objective severity (gray). All scenarios share the same
+    # I_H(t); evaluate it directly via make_schedule rather than integrating the
+    # system just for this curve.
+    I_H_func = make_schedule(scenarios[0]['I_H'])
     I_H_curve = np.array([I_H_func(ti) for ti in t_grid])
     ax.plot(t_grid, I_H_curve, color='gray', linestyle=LINESTYLES['solid'],
             linewidth=2.5, alpha=0.85, label=r'Severity of $H$')
@@ -398,12 +489,45 @@ def figureR3_path_dependence(save=True):
                 linewidth=scn['linewidth'], alpha=0.85, label=scn['label'])
 
     _style_time_panel(ax, t_final)
-    ax.set_xlabel("Time")
     ax.set_ylabel(r"Severity of H ($I_H$) /" + "\n" + r"Priority of H ($P$)")
+    ax.set_xlabel("Time")
     ax.legend(frameon=True)
 
+
+def figureR3_delayed_prioritization(save=True):
+    """
+    Figure R3 (manuscript Fig. 5): higher social learning delays prioritization
+    of issue H. Single panel; the gray line shows the objective severity of H,
+    rising linearly until reaching 1, while L is held at 0.5. Colored lines
+    show the priority of H over L at three levels of social learning. Stronger
+    social learning lengthens the delay before priority reaches equilibrium.
+    """
+    fig, ax = plt.subplots(1, 1, figsize=(8, 3))
+    _draw_delayed_prioritization(ax, constant_IH=False)
+
     if save:
-        fname = os.path.join(figures_dir, 'figureR3_path_dependence.pdf')
+        fname = os.path.join(figures_dir, 'figureR3_delayed_prioritization.pdf')
+        plt.savefig(fname)
+        print(f"Saved: {fname}")
+
+    plt.close()
+    return fig
+
+
+def figureR3S_delayed_prioritization(save=True):
+    """
+    Figure R3S (SI companion to figureR3; manuscript Fig. S2): with severity
+    held constant at its maximum (I_H fixed at 1 from the outset), priority
+    reaches equilibrium within 10 time units. Comparing with Fig. 5 shows that
+    whether severity starts at its maximum or rises gradually to it affects
+    only the lag in reaching the equilibrium priority, not the equilibrium
+    level itself, which is determined by social learning.
+    """
+    fig, ax = plt.subplots(1, 1, figsize=(8, 3))
+    _draw_delayed_prioritization(ax, constant_IH=True)
+
+    if save:
+        fname = os.path.join(supp_figures_dir, 'figureR3S_delayed_prioritization.pdf')
         plt.savefig(fname)
         print(f"Saved: {fname}")
 
@@ -413,8 +537,10 @@ def figureR3_path_dependence(save=True):
 
 def figureR4_dynamic_connectivity(save=True):
     """
-    Figure R4: single P(t) panel showing how inter-group connectivity alters priority.
-    Styled to match figureR3_path_dependence.
+    Figure R4 (manuscript Fig. 6): restoring intergroup learning corrects
+    underprioritization only above a threshold. Single P(t) panel; the two
+    scenarios differ in the size of the increase in intergroup learning at
+    t = 50. Styled to match figureR3_delayed_prioritization.
     """
     scenarios = figureR4_scenarios()
     t_final = 100
@@ -443,12 +569,11 @@ def figureR4_dynamic_connectivity(save=True):
 
 def figureD1_step_sH_drop(save=True):
     """
-    Figure D1 (Discussion section, first figure; manuscript Fig. 7):
-    three-scenario comparison with a step drop in s_H at t = 50 under constant
-    severity (I_H = 1.0, I_L = 0.5). The pre-step window t < 50 equilibrates
-    the system at the high-social-learning, mis-prioritized state from
-    figureR3's s_H = 0.9 scenario. At t = 50, s_H drops to 0.8, 0.7, or 0.6;
-    larger drops produce faster and more complete recovery of priority for H.
+    Figure D1 (Discussion section; manuscript Fig. 7): reducing social learning
+    can shift collective priority toward the high-social-learning issue.
+    Starting from the high-social-learning equilibrium of Fig. 5 (s_H = 0.9,
+    constant severity I_H = 1.0, I_L = 0.5), s_H is reduced at t = 50 to 0.8,
+    0.7, or 0.6. Larger reductions produce faster and more complete shifts.
     """
     scenarios = figureD1_scenarios()
     t_final = 100
@@ -457,7 +582,7 @@ def figureD1_step_sH_drop(save=True):
     fig, ax = plt.subplots(1, 1, figsize=(8, 3))
 
     for scn in scenarios:
-        data = run_scenario(scn, t_final, n_points=501)
+        data = run_scenario(scn, t_final)
         ax.plot(data['t'], data['P'], color=scn['color'], linestyle=scn['linestyle'],
                 linewidth=scn['linewidth'], alpha=0.85, label=scn['label'])
 
@@ -477,9 +602,10 @@ def figureD1_step_sH_drop(save=True):
 
 def figureR2S_phase_diagrams_full(save=True):
     """
-    Figure R2S (SI for R2): 1x2 side-by-side priority phase heatmaps over the
-    full y-range I_H = I_L in [0, 1]. Panel A is rho = 0, panel B is rho = 0.2.
-    No marker dots and no text annotations.
+    Figure R2S (SI for R2; manuscript Fig. S1): equilibrium priority of H
+    across the full range of objective severity I_H = I_L in [0, 1], extending
+    Fig. 4C and F. Panel A: without intergroup learning (rho = 0). Panel B:
+    with intergroup learning (rho = 0.2). No marker dots or text annotations.
     """
     b = _N_BASELINE
 
@@ -505,14 +631,14 @@ def figureR2S_phase_diagrams_full(save=True):
 
 def figureR4S_dynamic_connectivity(save=True):
     """
-    Figure R4S (SI for figureR4; manuscript Fig. S2): 3-panel version with
-    population priority P(t) on top, and group-level concerns for issues H
-    and L (one curve per group) below.
+    Figure R4S (SI for figureR4; manuscript Fig. S3): group-level dynamics
+    underlying Fig. 6. 3-panel version with population priority P(t) on top,
+    and group-level concerns for issues H and L (one curve per group) below,
+    showing that only the large jump collapses between-group divergence.
     """
     return plot_two_issue_CEP(figureR4_scenarios(), t_final=100,
                               filename='figureR4S_dynamic_connectivity.pdf',
-                              vertical=True, vline_at=50, save=save,
-                              priority_first=True, out_dir=supp_figures_dir)
+                              out_dir=supp_figures_dir, vline_at=50, save=save)
 
 
 # =============================================================================
@@ -520,8 +646,8 @@ def figureR4S_dynamic_connectivity(save=True):
 # =============================================================================
 
 def generate_all_figures():
-    """Generate all main figures for the paper, in section order:
-    Introduction -> Model -> Results -> Discussion."""
+    """Generate every figure in the paper (main and supplementary), in section
+    order: Introduction -> Model -> Results -> Discussion -> Supplementary."""
 
     print("=" * 60)
     print("Introduction")
@@ -539,7 +665,7 @@ def generate_all_figures():
     figureR1_two_issue_dynamics(save=True)
     figureR1_two_issue_dynamics(save=True, wide=True)
     figureR2_perturbations_and_phases(save=True)
-    figureR3_path_dependence(save=True)
+    figureR3_delayed_prioritization(save=True)
     figureR4_dynamic_connectivity(save=True)
 
     print("\n" + "=" * 60)
@@ -551,11 +677,13 @@ def generate_all_figures():
     print("Supplementary")
     print("=" * 60)
     figureR2S_phase_diagrams_full(save=True)
+    figureR3S_delayed_prioritization(save=True)
     figureR4S_dynamic_connectivity(save=True)
 
     print("\n" + "=" * 60)
     print("All figures generated successfully!")
-    print(f"Figures saved to: {figures_dir}")
+    print(f"Main figures saved to: {figures_dir}")
+    print(f"Supplementary figures saved to: {supp_figures_dir}")
     print("=" * 60)
 
 

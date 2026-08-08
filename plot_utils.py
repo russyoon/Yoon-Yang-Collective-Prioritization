@@ -6,7 +6,7 @@ import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
 
-from model import run_two_issue_system, make_schedule
+from model import run_two_issue_system
 
 
 def run_scenario(scn, t_final, **kwargs):
@@ -34,7 +34,6 @@ COLORS = {
     'primary2': '#e65100',    # Deep orange
     'primary3': '#1b5e20',    # Deep green
     'primary4': '#b71c1c',    # Deep red
-    'neutral': '#424242',     # Dark gray
     'black': 'black',
 }
 
@@ -43,12 +42,7 @@ LINESTYLES = {
     'solid': '-',
     'dashed': (0, (5, 2)),           # Longer dashes, tighter gaps
     'dashdot': (0, (5, 2, 1, 2)),    # Long dash, short dash
-    'dotted': (0, (1, 1.5)),         # Tight dots
 }
-
-# Combined cycles for scenarios (up to 4 scenarios)
-SCENARIO_COLORS = [COLORS['primary1'], COLORS['primary2'], COLORS['primary3'], COLORS['primary4']]
-SCENARIO_LINESTYLES = [LINESTYLES['solid'], LINESTYLES['dashed'], LINESTYLES['dotted'], LINESTYLES['dashdot']]
 
 # Set matplotlib parameters for publication quality
 plt.rcParams.update({
@@ -81,7 +75,7 @@ def add_panel_label(ax, label, x=-0.2, y=1.1, fontsize=None):
 
 
 def _build_network(group1, group2, rho_inter, rng):
-    """Build a two-group network with full intra-group and stochastic inter-group edges."""
+    """Build a two-group network with full intra-group and stochastic intergroup edges."""
     G = nx.Graph()
     G.add_nodes_from(group1, group='Group 1')
     G.add_nodes_from(group2, group='Group 2')
@@ -94,7 +88,7 @@ def _build_network(group1, group2, rho_inter, rng):
         for j in range(i + 1, len(group2)):
             G.add_edge(group2[i], group2[j])
 
-    # Inter-group connections
+    # Intergroup connections
     if rho_inter > 0:
         for g1_node in group1:
             for g2_node in group2:
@@ -130,30 +124,43 @@ def _style_time_panel(ax, t_final, vline_at=None):
         ax.axvline(x=vline_at, color='gray', linestyle='-', linewidth=1, alpha=0.5, zorder=0)
 
 
-def draw_priority_heatmap(ax, fig, s_H_values, I_values, heatmap_P, y_min=None):
+def draw_priority_heatmap(ax, fig, s_H_values, I_values, heatmap_P, y_min=None, fontscale=1.0,
+                          ylabel_fontsize=None, cbar_label_fontsize=None, xticks=None,
+                          cbar_labelpad=None, cbar_pad=None):
     """Render the priority heatmap on `ax` with consistent styling.
 
     If `y_min` is provided, zoom the y-axis to [y_min, 1] (matches figureR2);
     otherwise show the full I range with sparser ticks (matches figureR2S).
+    `fontscale` multiplies all label/tick font sizes (figureR2 passes >1 to
+    enlarge its panels; the default 1.0 leaves figureR2S unchanged).
+    `ylabel_fontsize` / `cbar_label_fontsize` override the y-axis and colorbar
+    label sizes (defaulting to 20*fontscale and 15*fontscale respectively).
+    `xticks`, if given, overrides the default 0.1-spaced x-axis ticks.
+    `cbar_labelpad` adds space between the colorbar and its label; `cbar_pad`
+    sets the gap between the heatmap and the colorbar.
     """
     im = ax.imshow(
         heatmap_P,
         extent=[s_H_values[0], s_H_values[-1], I_values[0], I_values[-1]],
         aspect="auto", origin="lower", cmap="coolwarm", vmin=0, vmax=1
     )
-    ax.set_xlabel(r"Social Learning for H ($s_H$)", fontsize=20)
-    ax.set_ylabel(r"Objective Severity ($I_H = I_L$)", fontsize=20)
-    ax.set_xticks(np.arange(round(s_H_values[0], 2),
-                            round(s_H_values[-1] + 0.01, 2), 0.1))
+    ax.set_xlabel(r"Social Learning for H ($s_H$)", fontsize=20 * fontscale)
+    ax.set_ylabel(r"Objective Severity ($I_H = I_L$)",
+                  fontsize=ylabel_fontsize if ylabel_fontsize is not None else 20 * fontscale)
+    ax.set_xticks(xticks if xticks is not None
+                  else np.arange(round(s_H_values[0], 2),
+                                 round(s_H_values[-1] + 0.01, 2), 0.1))
     if y_min is not None:
         ax.set_ylim(y_min, 1)
         ax.set_yticks(np.arange(y_min, 1.01, 0.1))
     else:
         ax.set_yticks(np.arange(0, 1.01, 0.2))
-    ax.tick_params(axis='both', labelsize=15)
-    cbar = fig.colorbar(im, ax=ax)
-    cbar.set_label(r"Priority of H ($P$)", fontsize=15)
-    cbar.ax.tick_params(labelsize=12)
+    ax.tick_params(axis='both', labelsize=15 * fontscale)
+    cbar = fig.colorbar(im, ax=ax, **({} if cbar_pad is None else {'pad': cbar_pad}))
+    cbar.set_label(r"Equilibrium Priority of H ($P^*$)",
+                   fontsize=cbar_label_fontsize if cbar_label_fontsize is not None else 15 * fontscale,
+                   labelpad=cbar_labelpad)
+    cbar.ax.tick_params(labelsize=12 * fontscale)
     ax.contour(
         heatmap_P, levels=[0.5], colors="black",
         extent=[s_H_values[0], s_H_values[-1], I_values[0], I_values[-1]],
@@ -161,92 +168,54 @@ def draw_priority_heatmap(ax, fig, s_H_values, I_values, heatmap_P, y_min=None):
     )
 
 
-def plot_two_issue_CEP(scenarios, t_final=300, linewidth=2, filename=None,
-                      vertical=False, vline_at=None, width=8, height=9,
-                      save=True, priority_first=False, out_dir=None):
+def plot_two_issue_CEP(scenarios, t_final, filename, out_dir, vline_at=None,
+                       save=True, width=8, height=9):
     """
-    Overlay C_H(t), C_L(t), and P(t) for multiple scenarios. Uses the canonical
-    R3/D1 main-figure styling on every panel (see `_style_time_panel`).
+    Three-panel (3x1, shared x) group-level dynamics figure (manuscript
+    Fig. S3): population priority for H on top, then group-level concern for
+    issue H and for issue L (one curve per group). Uses the canonical time-panel
+    styling on every panel (see `_style_time_panel`).
 
     Parameters
     ----------
     scenarios : list of dict
-        Each dict contains: 'label', 'initial_conditions', 's_H', 's_L', 'sigma',
-        'alpha', 'rho', 'I_H', 'I_L'. Optional 'color', 'linestyle',
-        'linewidth' override the default cycle.
-    vertical : bool
-        If True, 3x1 layout with shared x; else 1x3.
+        Each dict contains: 'label', 'color', 'linestyle', 'linewidth', and
+        the model parameters consumed by `run_scenario`.
     vline_at : float, optional
-        Vertical reference line time.
+        Vertical reference line time (e.g. the perturbation time).
     """
-    if vertical:
-        fig, axs = plt.subplots(3, 1, figsize=(width, height), sharex=True)
-        if priority_first:
-            axP, axH, axL = axs
-        else:
-            axH, axL, axP = axs
-    else:
-        fig, axs = plt.subplots(1, 3, figsize=(3 * width, height / 3))
-        axH, axL, axP = axs
+    fig, (axP, axH, axL) = plt.subplots(3, 1, figsize=(width, height), sharex=True)
 
-    for i, scn in enumerate(scenarios):
-        color = scn.get('color', SCENARIO_COLORS[i % len(SCENARIO_COLORS)])
-        linestyle = scn.get('linestyle', SCENARIO_LINESTYLES[i % len(SCENARIO_LINESTYLES)])
-        lw = scn.get('linewidth', linewidth)
-
+    for scn in scenarios:
         data = run_scenario(scn, t_final)
         t = data['t']
-        label = scn.get('label', f"scenario {i+1}")
-
-        # C_H(t): plot both groups with same color/linestyle; one legend entry per scenario
-        axH.plot(t, data['C_1_H'], color=color, linestyle=linestyle, linewidth=lw,
-                 alpha=0.85, label=label)
-        axH.plot(t, data['C_2_H'], color=color, linestyle=linestyle, linewidth=lw,
-                 alpha=0.85, label='_nolegend_')
-
-        # C_L(t): issue L
-        axL.plot(t, data['C_1_L'], color=color, linestyle=linestyle, linewidth=lw,
-                 alpha=0.85, label=label)
-        axL.plot(t, data['C_2_L'], color=color, linestyle=linestyle, linewidth=lw,
-                 alpha=0.85, label='_nolegend_')
+        style = dict(color=scn['color'], linestyle=scn['linestyle'],
+                     linewidth=scn['linewidth'])
 
         # P(t): population priority of H
-        axP.plot(t, data['P'], color=color, linestyle=linestyle, linewidth=lw,
-                 alpha=0.9, label=label)
+        axP.plot(t, data['P'], alpha=0.9, label=scn['label'], **style)
+        # C_H(t) and C_L(t): both groups with the same color/linestyle
+        axH.plot(t, data['C_1_H'], alpha=0.85, **style)
+        axH.plot(t, data['C_2_H'], alpha=0.85, **style)
+        axL.plot(t, data['C_1_L'], alpha=0.85, **style)
+        axL.plot(t, data['C_2_L'], alpha=0.85, **style)
 
-    # Canonical R3/D1 main-figure styling on every panel.
-    for ax in [axH, axL, axP]:
+    for ax in (axP, axH, axL):
         _style_time_panel(ax, t_final, vline_at=vline_at)
 
-    # Labels (match R1/R3/D1 phrasing).
-    if priority_first:
-        bottom_ax = axL
-    else:
-        bottom_ax = axP
-    if vertical:
-        bottom_ax.set_xlabel("Time")
-    else:
-        for ax in [axH, axL, axP]:
-            ax.set_xlabel("Time")
+    axL.set_xlabel("Time")
+    axP.set_ylabel(r"Priority of H ($P$)")
     axH.set_ylabel("Group concern\n" + r"for issue H ($C_{gH}$)")
     axL.set_ylabel("Group concern\n" + r"for issue L ($C_{gL}$)")
-    axP.set_ylabel(r"Priority of H ($P$)")
 
-    # Legend on the priority panel only (matches R3/D1 main figures).
+    # Legend on the priority panel only.
     axP.legend(frameon=True)
 
-    # Panel letters A, B, C
-    if priority_first:
-        add_panel_label(axP, 'A')
-        add_panel_label(axH, 'B')
-        add_panel_label(axL, 'C')
-    else:
-        for letter, ax in zip(['A', 'B', 'C'], [axH, axL, axP]):
-            add_panel_label(ax, letter)
+    for letter, ax in zip('ABC', (axP, axH, axL)):
+        add_panel_label(ax, letter)
 
     if save:
-        target_dir = out_dir if out_dir is not None else figures_dir
-        fname = os.path.join(target_dir, filename if filename else "two_issue_CEP.pdf")
+        fname = os.path.join(out_dir, filename)
         plt.savefig(fname)
         print(f"Saved: {fname}")
 
@@ -254,7 +223,7 @@ def plot_two_issue_CEP(scenarios, t_final=300, linewidth=2, filename=None,
     return fig
 
 
-# Shared baseline parameters for R1 / R2 / R2S (s_L = 0.4)
+# Baseline parameter values (manuscript Table S1), shared by R1 / R2 / R2S
 _N_BASELINE = dict(
     ic=(0.55, 0.45, 0.45, 0.55),
     s_H=0.9, s_L=0.4,
@@ -265,6 +234,8 @@ _N_BASELINE = dict(
 
 
 def run_N_baseline(s_H=None, rho=None):
+    """Run the baseline simulation (manuscript Table S1). The optional s_H and
+    rho overrides produce the perturbed overlays of manuscript Fig. 4A/D."""
     b = _N_BASELINE
     s_H = b['s_H'] if s_H is None else s_H
     rho = b['rho'] if rho is None else rho
@@ -276,6 +247,9 @@ def run_N_baseline(s_H=None, rho=None):
 
 
 def figureR4_scenarios():
+    """R4's two intergroup-learning scenarios (manuscript Figs. 6 and S3),
+    with baked-in styles: from the polarized baseline (rho = 0), intergroup
+    learning jumps at t = 50 to 0.2 (small jump) or 0.5 (large jump)."""
     ivs = (0.55, 0.45, 0.45, 0.55)
     return [
         {
@@ -307,11 +281,18 @@ def figureR4_scenarios():
 _BIG_DOTTED = (0, (2.5, 2.5))
 
 
-def figureR3_scenarios():
-    """R3's three rising-severity scenarios (s_H sweep) with baked-in styles."""
+def figureR3_scenarios(constant_IH=False):
+    """R3's three social-learning levels (s_H = 0.6, 0.7, 0.9) with baked-in
+    styles (manuscript Fig. 5 / Table S2).
+
+    By default the objective severity of H rises linearly until reaching 1
+    (I_H(t) = min(max((t - 20)/60, 0), 1)) while L is held at 0.5. If
+    ``constant_IH`` is True, I_H is instead fixed at 1 from the outset
+    (the Fig. S2 variant).
+    """
     ivs = (0, 0, 0.5, 0.5)
     rho0 = 0
-    I_H_ramp = lambda t: np.clip(1/60*(t-20), 0, 1)
+    I_H = 1.0 if constant_IH else (lambda t: np.clip(1/60*(t-20), 0, 1))
     styled = [
         (r'$s_H = 0.6$', 0.6, '#7f0000',          _BIG_DOTTED),
         (r'$s_H = 0.7$', 0.7, COLORS['primary4'], LINESTYLES['dashdot']),
@@ -322,7 +303,7 @@ def figureR3_scenarios():
             'label': lbl,
             'initial_conditions': ivs,
             's_H': s_H, 's_L': 0.4, 'sigma': 0.25, 'alpha': 3, 'rho': rho0,
-            'I_H': I_H_ramp,
+            'I_H': I_H,
             'I_L': 0.5,
             'color': color,
             'linestyle': ls,
@@ -333,7 +314,8 @@ def figureR3_scenarios():
 
 
 def figureD1_scenarios():
-    """D1's three step-drop-in-s_H scenarios with baked-in styles."""
+    """D1's three step-drop-in-s_H scenarios with baked-in styles (manuscript
+    Fig. 7 / Table S2): s_H = 0.9 for t < 50, then 0.8, 0.7, or 0.6."""
     ic = (0, 0, 0.5, 0.5)
     s_H_start = 0.9
     t_step = 50
